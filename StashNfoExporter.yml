@@ -1,0 +1,14 @@
+name: Stash NFO Exporter
+description: Makes NFO files from Stash
+version: 0.1
+url: https://github.com/scruffynerf/StashNfoExporterKodi
+exec:
+  - python
+  - "{pluginDir}/StashNfoExporter.py"
+interface: raw
+hooks:
+  - name: Add NFO files
+    description: Makes NFO files for scenes (Organized scenes by default !)
+    triggeredBy:
+      - Scene.Create.Post
+      - Scene.Update.Post
