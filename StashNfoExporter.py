@@ -171,16 +171,9 @@ json={
   "operationName": "FindScenes",
   "variables": {
     "filter": {
-      "q": "",
-      "page": 1,
-      "per_page": 40,
-      "direction": "DESC"
+      "per_page": -1,
     },
     "scene_filter": {
-      "movies": {
-        "value": [],
-        "modifier": "IS_NULL"
-      },
       "organized": config.organized
     }
   },
