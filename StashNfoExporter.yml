@@ -1,6 +1,6 @@
 name: Stash NFO Exporter
 description: Makes .nfo files from Stash
-version: 1.0
+version: 1.1
 url: https://github.com/rustyinfinity/StashNfoExporter
 exec:
   - python

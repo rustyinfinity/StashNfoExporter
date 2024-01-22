@@ -1,5 +1,7 @@
 import sys
 import re
+
+
 # Log messages sent from a script scraper instance are transmitted via stderr and are
 # encoded with a prefix consisting of special character SOH, then the log
 # level (one of t, d, i, w or e - corresponding to trace, debug, info,
@@ -14,7 +16,7 @@ import re
 def __log(level_char: bytes, s):
     if level_char:
         lvl_char = "\x01{}\x02".format(level_char.decode())
-        s = re.sub(r"data:image.+?;base64(.+?')","[...]",str(s))
+        s = re.sub(r"data:image.+?;base64(.+?')", "[...]", str(s))
         for x in s.split("\n"):
             print(lvl_char, x, file=sys.stderr, flush=True)
 

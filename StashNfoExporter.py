@@ -74,6 +74,7 @@ def stashSceneInfo(sceneId):
 
     performer_name = []
     performer_image = []
+    performer_url = []
     scene_tags = []
     performer_gender = []
     stash_ids = []
@@ -85,6 +86,11 @@ def stashSceneInfo(sceneId):
         performer_name.append(performer['name'])
         performer_image.append(performer['image_path'])
         performer_gender.append(performer['gender'])
+        if performer['stash_ids'] is not None and len(performer['stash_ids']) is not 0:
+            performer_url.append('https://stashdb.org/performers/'+performer['stash_ids'][0]['stash_id'])
+        else:
+            performer_url.append("")
+
 
     for ids in scene_data['stash_ids']:
         stash_ids.append(ids['stash_id'])
@@ -111,12 +117,15 @@ def stashSceneInfo(sceneId):
     play_count = scene_data['play_count']
 
     # By default, uses First File
-    codec = scene_data['files'][0]['video_codec']
-    width = scene_data['files'][0]['width']
-    height = scene_data['files'][0]['height']
-    durationinseconds = scene_data['files'][0]['duration']
-    audio_codec = scene_data['files'][0]['audio_codec']
-    file_path = scene_data['files'][0]['path']
+    if len(scene_data['files'][0]) is not 0 and scene_data['files'] is not None:
+        codec = scene_data['files'][0]['video_codec']
+        width = scene_data['files'][0]['width']
+        height = scene_data['files'][0]['height']
+        durationinseconds = scene_data['files'][0]['duration']
+        audio_codec = scene_data['files'][0]['audio_codec']
+        file_path = scene_data['files'][0]['path']
+    else:
+        codec, width, height, durationinseconds, audio_codec, file_path = '', '', '', '', '', ''
 
     thumb_poster = scene_data['paths']['screenshot']
 
@@ -126,7 +135,7 @@ def stashSceneInfo(sceneId):
             performer_image, scene_tags, codec,
             width, height, durationinseconds,
             audio_codec, thumb_poster, performer_gender,
-            year_released, file_path, stash_ids)
+            year_released, file_path, stash_ids,performer_url)
 
 
 def generateNFO(data):
@@ -136,7 +145,7 @@ def generateNFO(data):
      performer_name, performer_image, scene_tags,
      codec, width, height, durationinseconds,
      audio_codec, thumb_poster, performer_gender,
-     year_released, file_path, stash_ids) = data
+     year_released, file_path, stash_ids,performer_url) = data
 
     root = etree.Element("movie")
 
@@ -145,6 +154,10 @@ def generateNFO(data):
 
     originaltitle_element = etree.SubElement(root, "originaltitle")
     originaltitle_element.text = title
+
+    sorttitle_element = etree.SubElement(root,"sorttitle")
+
+    epbookmark_element = etree.SubElement(root,"epbookmark")
 
     id_element = etree.SubElement(root, "uniqueid")
     id_element.text = id
@@ -174,6 +187,9 @@ def generateNFO(data):
     plot_element = etree.SubElement(root, "plot")
     plot_element.text = details
 
+    outline_element = etree.SubElement(root,"outline")
+    outline_element.text = details
+
     studio_element = etree.SubElement(root, "studio")
     studio_element.text = studio
 
@@ -186,14 +202,16 @@ def generateNFO(data):
     for i in range(len(performer_name)):
         actor_element = etree.SubElement(root, "actor")
         name_element = etree.SubElement(actor_element, "name")
+        name_element.text = performer_name[i]
         gender_element = etree.SubElement(actor_element, "gender")
         gender_element.text = performer_gender[i]
         role_element = etree.SubElement(actor_element, "role")
         order_element = etree.SubElement(actor_element, "order")
         order_element.text = str(i)
-        name_element.text = performer_name[i]
         image_element = etree.SubElement(actor_element, "thumb", attrib={"aspect": "poster"})
         image_element.text = performer_image[i]
+        profile_element = etree.SubElement(actor_element,"profile")
+        profile_element.text = str(performer_url[i])
 
     genre_element = etree.SubElement(root, "genre")
 
@@ -211,15 +229,27 @@ def generateNFO(data):
     video_element = etree.SubElement(streamdetails_element, "video")
     codec_element = etree.SubElement(video_element, "codec")
     codec_element.text = codec
+    aspect_element = etree.SubElement(video_element,"aspect")
+    aspect_element.text = str(round(width/height,2))
     width_element = etree.SubElement(video_element, "width")
     width_element.text = str(width)
     height_element = etree.SubElement(video_element, "height")
     height_element.text = str(height)
     durationinseconds_element = etree.SubElement(video_element, "durationinseconds")
     durationinseconds_element.text = str(durationinseconds)
+    stereomode_element = etree.SubElement(video_element,"stereomode")
+
     audio_element = etree.SubElement(streamdetails_element, "audio")
     audio_codec_element = etree.SubElement(audio_element, "codec")
     audio_codec_element.text = audio_codec
+    language_audio_element = etree.SubElement(audio_element,"language")
+    channels_audio_element = etree.SubElement(audio_element,"channels")
+
+    source_element = etree.SubElement(root,"source")
+    source_element.text = "UNKNOWN"
+
+    edition_element = etree.SubElement(root,"edition")
+    edition_element.text = "NONE"
 
     file = os.path.basename(file_path)
 
@@ -227,6 +257,8 @@ def generateNFO(data):
 
     original_filename_element = etree.SubElement(root, "original_filename")
     original_filename_element.text = file
+
+    user_note_element = etree.SubElement(root,"user_note")
 
     base_dir = os.path.dirname(file_path)
 
