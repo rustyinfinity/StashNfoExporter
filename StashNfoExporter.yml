@@ -10,5 +10,4 @@ hooks:
   - name: Add NFO files
     description: Makes NFO files for scenes (Organized scenes by default !)
     triggeredBy:
-      - Scene.Create.Post
       - Scene.Update.Post
