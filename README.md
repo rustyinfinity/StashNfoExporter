@@ -4,6 +4,14 @@ Export .nfo from Stash for services like Jellyfin Kodi Emby etc .
 # Usage
 Clone the repo to plugins folder of stash.
 
+Make sure lxml and requests modules are installed.
+
+``pip install lxml requests``
+
+or 
+
+``pip install -r requirements.txt``
+
 # What it does ?
 It will automatically create "filename.nfo" for all the organized files at the same directory of the video file when any movie is added or updated .
 
