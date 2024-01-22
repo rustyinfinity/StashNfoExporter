@@ -1,5 +1,5 @@
 # StashNfoExporter
-Export .nfo from Stash for services like Kodi.
+Export .nfo from Stash for services like Jellyfin Kodi Emby etc .
 
 # Usage
 Clone the repo to plugins folder of stash.
