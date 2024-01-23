@@ -32,6 +32,11 @@ Api key can be added in config if you have one.
 <img width="1067" alt="Screenshot 2024-01-22 at 9 34 14 AM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/6db29e48-32d6-4783-a2dd-b79c1f690e44">
 <img width="1411" alt="Screenshot 2024-01-21 at 7 42 01 PM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/64a593fb-4f50-4dc1-b286-e7f8ca55df76">
 
+# Jellyfin Example
+![Screenshot 2024-01-23 at 11 33 42 AM](https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/8e78e5d0-d059-4c52-a7f7-cd0f561d627d)
+![Screenshot 2024-01-23 at 11 37 53 AM](https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/cf256f18-303f-409a-bb1a-55e3907d9c49)
+![Screenshot 2024-01-23 at 11 39 01 AM](https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/cac52d41-f129-4b3d-be73-abe1574c1cc5)
+
 
 # How i add to Kodi 
 <img width="1142" alt="Screenshot 2024-01-22 at 9 07 22 AM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/fdf0a168-1123-4808-b00b-ff6fe53f2dd6">
