@@ -101,8 +101,10 @@ def stashSceneInfo(sceneId):
 
     if scene_data['studio'] is not None:
         studio = scene_data['studio']['name']
+        studio_image = scene_data['studio']['image_path']
     else:
         studio = ""
+        studio_image = ""
 
     director = scene_data['director']
     rating = scene_data['rating100']
@@ -135,7 +137,7 @@ def stashSceneInfo(sceneId):
             performer_image, scene_tags, codec,
             width, height, durationinseconds,
             audio_codec, thumb_poster, performer_gender,
-            year_released, file_path, stash_ids,performer_url)
+            year_released, file_path, stash_ids,performer_url,studio_image)
 
 
 def generateNFO(data):
@@ -145,7 +147,7 @@ def generateNFO(data):
      performer_name, performer_image, scene_tags,
      codec, width, height, durationinseconds,
      audio_codec, thumb_poster, performer_gender,
-     year_released, file_path, stash_ids,performer_url) = data
+     year_released, file_path, stash_ids,performer_url,studio_image) = data
 
     root = etree.Element("movie")
 
@@ -198,6 +200,16 @@ def generateNFO(data):
 
     thumb_poster_element = etree.SubElement(root, "thumb", attrib={"aspect": "poster"})
     thumb_poster_element.text = thumb_poster
+    
+    thumb_landscape_element = etree.SubElement(root,"thumb",attrib={"aspect": "landscape"})
+    thumb_landscape_element.text = thumb_poster
+
+    thumb_studio_element = etree.SubElement(root,"thumb",attrib={"aspect": "clearlogo"})
+    thumb_studio_element.text = studio_image
+    
+    fanart_element = etree.SubElement(root,"fanart")
+    fanart_element_thumb_element = etree.SubElement(fanart_element,"thumb")
+    fanart_element_thumb_element.text = thumb_poster
 
     for i in range(len(performer_name)):
         actor_element = etree.SubElement(root, "actor")
@@ -223,6 +235,8 @@ def generateNFO(data):
     set_element_name = etree.SubElement(set_element, "name")
     set_element_name.text = studio
     set_element_overview = etree.SubElement(set_element, "overview")
+    set_element_thumb = etree.SubElement(set_element,"thumb", attrib={"aspect":"poster"})
+    set_element_thumb.text = studio_image
 
     fileinfo_element = etree.SubElement(root, "fileinfo")
     streamdetails_element = etree.SubElement(fileinfo_element, "streamdetails")
