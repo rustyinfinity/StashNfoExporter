@@ -23,9 +23,10 @@ I don't use kodi regularly but use jellyfin and it works very nicely with it.
 
 I have added library as Movies and You can use select view as thumb in your library and it will show horizontal thumbs like stash with all the metadata.
 
-You can change organized to False if you want.
+### By default only Videos that it scan are set to organized ones. You can change organized to False if you want in config.py.
 
-Api key can be added in config if you have one.
+# If you have credentials  
+Api key can be generated from security section in stash settings and added in config.py.
 
 # Example !
 <img width="939" alt="Screenshot 2024-01-22 at 3 14 44 PM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/2617cc02-27c8-4ab9-8123-0fa7fa117cf1">
