@@ -86,7 +86,7 @@ def stashSceneInfo(sceneId):
         performer_name.append(performer['name'])
         performer_image.append(performer['image_path'])
         performer_gender.append(performer['gender'])
-        if performer['stash_ids'] is not None and len(performer['stash_ids']) is not 0:
+        if performer['stash_ids'] is not None and len(performer['stash_ids']) != 0:
             performer_url.append('https://stashdb.org/performers/'+performer['stash_ids'][0]['stash_id'])
         else:
             performer_url.append("")
@@ -117,7 +117,7 @@ def stashSceneInfo(sceneId):
     play_count = scene_data['play_count']
 
     # By default, uses First File
-    if len(scene_data['files'][0]) is not 0 and scene_data['files'] is not None:
+    if len(scene_data['files'][0]) != 0 and scene_data['files'] is not None:
         codec = scene_data['files'][0]['video_codec']
         width = scene_data['files'][0]['width']
         height = scene_data['files'][0]['height']
