@@ -1,11 +1,7 @@
 # StashNfoExporter
-
-<img width="1188" alt="Screenshot 2024-01-24 at 4 23 41 PM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/b3d246e6-c486-4ac2-9035-486fc0c32b2e">
-<br>
-<br>
-<h2 align="center">
+<p align="center">
  Make '.nfo' file from metadata obtained via Stash for services like Jellyfin Kodi Emby etc .
-</h2>
+</p>
 
 # Usage
 Clone the repo to plugins folder of stash.
@@ -42,7 +38,9 @@ Api key can be generated from security section in stash settings and added in co
 
 # Jellyfin Example
 
-### Theme that I am using in first image is https://github.com/loof2736/scyfin
+### Theme that I am using is https://github.com/loof2736/scyfin
+<img width="1188" alt="Screenshot 2024-01-24 at 4 23 41 PM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/b3d246e6-c486-4ac2-9035-486fc0c32b2e">
+<br>
 
 ## Default Theme Examples 
 
@@ -54,12 +52,14 @@ Api key can be generated from security section in stash settings and added in co
 # How i add to Kodi 
 <img width="1142" alt="Screenshot 2024-01-22 at 9 07 22 AM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/fdf0a168-1123-4808-b00b-ff6fe53f2dd6">
 <br>
+
 # File Structure and File Names 
 I will add .nfo naming according how you need once i get time in few weeks.
 <br>
 For Now i use this naming and achieve it by <a href="https://github.com/stashapp/CommunityScripts/tree/main/plugins/renamerOnUpdate">renamer plugin for stash</a>.
 <br>
-### You can also add all movies in same directory without creating subdirectories but make sure filenames are diffrent as now i have changed saving nfo as "filename.nfo".
+
+### You can also add all movies in same directory without creating subdirectories but make sure filenames are different as now i have changed saving nfo as "filename.nfo".
 <br>
 <img width="1265" alt="Screenshot 2024-01-22 at 9 38 58 AM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/4a599cfa-dba1-43af-b863-1d820f4cd21d">
 <br>
