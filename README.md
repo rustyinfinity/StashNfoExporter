@@ -8,6 +8,7 @@ Clone the repo to plugins folder of stash.
 
 Make sure lxml and requests modules are installed.
 
+
 ```
 pip install lxml requests
 ```
@@ -17,6 +18,9 @@ or
 ```
 pip install -r requirements.txt
 ```
+
+## For people using Dockers
+They can refer to this post https://github.com/rustyinfinity/StashNfoExporter/issues/1#issuecomment-1902639819
 
 # What it does ?
 It will automatically create "filename.nfo" for all the organized files at the same directory of the video file when any movie is added or updated .
@@ -53,7 +57,7 @@ Api key can be generated from security section in stash settings and added in co
 <img width="1142" alt="Screenshot 2024-01-22 at 9 07 22 AM" src="https://github.com/rustyinfinity/StashNfoExporter/assets/115462641/fdf0a168-1123-4808-b00b-ff6fe53f2dd6">
 <br>
 
-# File Structure and File Names 
+# File Structure and File Names
 I will add .nfo naming according how you need once i get time in few weeks.
 <br>
 For Now i use this naming and achieve it by <a href="https://github.com/stashapp/CommunityScripts/tree/main/plugins/renamerOnUpdate">renamer plugin for stash</a>.
