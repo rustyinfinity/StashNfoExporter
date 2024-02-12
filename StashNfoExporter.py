@@ -139,6 +139,15 @@ def stashSceneInfo(sceneId):
             audio_codec, thumb_poster, performer_gender,
             year_released, file_path, stash_ids,performer_url,studio_image)
 
+def file_changes_check(nfo_file_data,xml_data):
+        if nfo_file_data == "":
+            return True
+        else:
+            if nfo_file_data.encode() == xml_data:
+                return False
+            else:
+                return True
+
 
 def generateNFO(data):
     (title, id, play_count,
@@ -277,9 +286,20 @@ def generateNFO(data):
     base_dir = os.path.dirname(file_path)
 
     xml_string = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="utf-8")
-    with open(f"{base_dir}/{filename}.nfo", "wb") as f:
-        f.write(xml_string)
-        log.info(f"Added nfo for {filename} [Id -> {id}] [File -> {base_dir}/{filename}.nfo]")
+
+    if os.path.exists(f"{base_dir}/{filename}.nfo"):
+        with open(f"{base_dir}/{filename}.nfo", "r") as f:
+            nfo_content = f.read()
+            if file_changes_check(nfo_content,xml_string) is True:
+                 with open(f"{base_dir}/{filename}.nfo", "wb") as f:
+                    f.write(xml_string)
+                    log.warning(f"Change Detected ! Updated nfo for {filename} [Id -> {id}] [File -> {base_dir}/{filename}.nfo]")
+            else:
+                log.info(f"No Change Detected for {filename} [Id -> {id}]")
+    else:
+        with open(f"{base_dir}/{filename}.nfo", "wb") as f:
+            f.write(xml_string)
+            log.warning(f"Added nfo for {filename} [Id -> {id}] [File -> {base_dir}/{filename}.nfo]")
 
 
 def main():
