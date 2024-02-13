@@ -1,6 +1,6 @@
-# StashNfoExporter
+<h1 align="center">  StashNfoExporter </h1>
 <p align="center">
- Make '.nfo' file from metadata obtained via Stash for services like Jellyfin Kodi Emby etc .
+ Makes '.nfo' file from metadata obtained via Stash for services like Jellyfin Kodi Emby etc .
 </p>
 
 # Usage
