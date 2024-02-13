@@ -1,13 +1,13 @@
 name: Stash NFO Exporter
 description: Makes .nfo files from Stash
-version: 1.1
+version: 1.2
 url: https://github.com/rustyinfinity/StashNfoExporter
 exec:
   - python
   - "{pluginDir}/StashNfoExporter.py"
 interface: raw
 hooks:
-  - name: Add NFO files
+  - name: nfo_exporter
     description: Makes NFO files for scenes (Organized scenes by default !)
     triggeredBy:
       - Scene.Update.Post
