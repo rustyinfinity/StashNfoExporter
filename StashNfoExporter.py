@@ -1,401 +1,240 @@
-import os
 import requests
-import lxml.etree as etree
-import datetime
 import config
 import log
-import concurrent.futures
-import sys
+import lxml.etree as etree
+import datetime
+import os
+import time
 
-# Graphql Url
-graphqlUrl = config.graphql_url
-
-# Headers for requests
 HEADERS = {
     'Content-Type': 'application/json',
     'ApiKey': f'{config.api_key}',
+    'Accept': 'application/json',
+    'Connection': 'keep-alive',
+    'DNT': '1',
 }
 
-# Validation config check 
-def validate_config():
-    required_config_keys = ['graphql_url', 'organized', 'parallel_workers']
-
-    for key in required_config_keys:
-        if key not in config.__dict__ or not getattr(config, key):
-            print(f"Error: Config value '{key}' is missing or empty. Please provide a valid value in your config.py file.", file=sys.stderr)
-            sys.exit(1)
-
-# Request Graphql url and get json data
-def make_graphql_request(query_json):
+def make_graphql_request(query):
     try:
-        response = requests.post(graphqlUrl, json=query_json, headers=HEADERS)
-        if response.status_code == 200:
-            response.raise_for_status()
-            return response.json()
-        else:
-            log.error(f"Error: {response.status_code} - {response.text}")
-            return None
+        json_query = {"query": query}
+        response = requests.post(config.graphql_url, json=json_query, headers=HEADERS)
+        response.raise_for_status()  
+        return response.json()
     except requests.exceptions.RequestException as e:
         log.error(f"Error making GraphQL request: {e}")
         return None
 
+def write_nfo(root, file_path):
+    xml_string = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="utf-8")
+    file = open(file_path, 'wb')
+    try:
+        file.write(xml_string)
+    finally:
+        file.close()
+        log.info(f"Added {file_path}")
 
-# Parse Graphql json data and returns metadata for required for making nfo files
-def stashSceneInfo(sceneId):
-    json = {
-        "operationName": "FindScene",
-        "variables": {
-            "id": sceneId
-        },
-        "query": "query FindScene($id: ID!, $checksum: String) { findScene(id: $id, checksum: $checksum) { "
-                 "...SceneData __typename } } fragment SceneData on Scene { id title code details director urls date "
-                 "rating100 o_counter organized interactive interactive_speed captions { language_code caption_type "
-                 "__typename } created_at updated_at resume_time last_played_at play_duration play_count files { "
-                 "...VideoFileData __typename } paths { screenshot preview stream webp vtt sprite funscript "
-                 "interactive_heatmap caption __typename } scene_markers { ...SceneMarkerData __typename } galleries "
-                 "{ ...SlimGalleryData __typename } studio { ...SlimStudioData __typename } movies { movie { "
-                 "...MovieData __typename } scene_index __typename } tags { ...SlimTagData __typename } performers { "
-                 "...PerformerData __typename } stash_ids { endpoint stash_id __typename } sceneStreams { url "
-                 "mime_type label __typename } __typename } fragment VideoFileData on VideoFile { id path size "
-                 "mod_time duration video_codec audio_codec width height frame_rate bit_rate fingerprints { type "
-                 "value __typename } __typename } fragment SceneMarkerData on SceneMarker { id title seconds stream "
-                 "preview screenshot scene { id __typename } primary_tag { id name __typename } tags { id name "
-                 "__typename } __typename } fragment SlimGalleryData on Gallery { id title code date urls details "
-                 "photographer rating100 organized files { ...GalleryFileData __typename } folder { ...FolderData "
-                 "__typename } image_count cover { id files { ...ImageFileData __typename } paths { thumbnail "
-                 "__typename } __typename } chapters { id title image_index __typename } studio { id name image_path "
-                 "__typename } tags { id name __typename } performers { id name gender favorite image_path __typename "
-                 "} scenes { ...SlimSceneData __typename } __typename } fragment GalleryFileData on GalleryFile { id "
-                 "path size mod_time fingerprints { type value __typename } __typename } fragment FolderData on "
-                 "Folder { id path __typename } fragment ImageFileData on ImageFile { id path size mod_time width "
-                 "height fingerprints { type value __typename } __typename } fragment SlimSceneData on Scene { id "
-                 "title code details director urls date rating100 o_counter organized interactive interactive_speed "
-                 "resume_time play_duration play_count files { ...VideoFileData __typename } paths { screenshot "
-                 "preview stream webp vtt sprite funscript interactive_heatmap caption __typename } scene_markers { "
-                 "id title seconds primary_tag { id name __typename } __typename } galleries { id files { path "
-                 "__typename } folder { path __typename } title __typename } studio { id name image_path __typename } "
-                 "movies { movie { id name front_image_path __typename } scene_index __typename } tags { id name "
-                 "__typename } performers { id name gender favorite image_path __typename } stash_ids { endpoint "
-                 "stash_id __typename } __typename } fragment SlimStudioData on Studio { id name image_path stash_ids "
-                 "{ endpoint stash_id __typename } parent_studio { id __typename } details rating100 aliases "
-                 "__typename } fragment MovieData on Movie { id name aliases duration date rating100 director studio "
-                 "{ ...SlimStudioData __typename } synopsis url front_image_path back_image_path scene_count scenes { "
-                 "id title __typename } __typename } fragment SlimTagData on Tag { id name aliases image_path "
-                 "parent_count child_count __typename } fragment PerformerData on Performer { id name disambiguation "
-                 "url gender twitter instagram birthdate ethnicity country eye_color height_cm measurements fake_tits "
-                 "penis_length circumcised career_length tattoos piercings alias_list favorite ignore_auto_tag "
-                 "image_path scene_count image_count gallery_count movie_count performer_count o_counter tags { "
-                 "...SlimTagData __typename } stash_ids { stash_id endpoint __typename } rating100 details death_date "
-                 "hair_color weight __typename }"
-    }
+def process_scene(scene):
+    root = etree.Element("movie")
 
-    json_response = make_graphql_request(json)
+    # Title
+    title_element = etree.SubElement(root, "title")
+    title_element.text = scene['title']
 
-    if json_response:
-        scene_data = json_response['data']['findScene']
+    # Original Title
+    original_title_element = etree.SubElement(root, "originaltitle")
+    original_title_element.text = scene['title']
 
-        performer_name = []
-        performer_image = []
-        performer_url = []
-        scene_tags = []
-        performer_gender = []
-        stash_ids = []
+    # Sort Title
+    sort_title_element = etree.SubElement(root, "sorttitle")
+    sort_title_element.text = scene['title']
 
-        # Scene tags
-        for tags in scene_data['tags']:
-            scene_tags.append(tags['name'])
+    # Unique ID
+    unique_id_element = etree.SubElement(root, "uniqueid")
+    unique_id_element.text = str(scene['id'])
 
-        # Performer data
-        for performer in scene_data['performers']:
-            performer_name.append(performer['name'])
-            performer_image.append(performer['image_path'])
-            performer_gender.append(performer['gender'])
-            if performer['stash_ids'] is not None and len(performer['stash_ids']) != 0:
-                performer_url.append('https://stashdb.org/performers/' + performer['stash_ids'][0]['stash_id'])
-            else:
-                performer_url.append("")
+    # Stash IDs
+    for stash_id in scene['stash_ids']:
+        stash_id_element = etree.SubElement(root, "uniqueid", type="stashdb")
+        stash_id_element.text = str(stash_id['stash_id'])
 
-        # Stash ids
-        for ids in scene_data['stash_ids']:
-            stash_ids.append(ids['stash_id'])
+    # MPAA Rating
+    mpaa_element = etree.SubElement(root, "mpaa")
+    mpaa_element.text = "XXX"  # Adjust as per your requirements
 
-        # Scene Title
-        title = scene_data['title']
+    # Play Count
+    playcount_element = etree.SubElement(root, "playcount")
+    playcount_element.text = str(scene['play_count'])
 
-        # Scene ID
-        id = scene_data['id']
+    # Date Added
+    dateadded_element = etree.SubElement(root, "dateadded")
+    dateadded_element.text = str(scene['created_at'])
 
-        # Scene Details
-        details = scene_data['details']
+    # Premiered Date
+    premiered_element = etree.SubElement(root, "premiered")
+    premiered_element.text = scene['date']
 
-        # Scene Studio
-        if scene_data['studio'] is not None:
-            studio = scene_data['studio']['name']
-            studio_image = scene_data['studio']['image_path']
-        else:
-            studio = ""
-            studio_image = ""
-
-        # Scene Director
-        director = scene_data['director']
-
-        # Scene Rating
-        rating = scene_data['rating100']
-
-        # Scene Date Created
-        date_created = scene_data['created_at']
-        # Scene Date Released
-        date_released = scene_data['date']
-        if date_released is not None:
-            # Year Released
-            year_released = datetime.datetime.strptime(date_released, "%Y-%m-%d").year
-        else:
-            year_released = ""
-
-        # Play Count
-        play_count = scene_data['play_count']
-
-        # Scene File data
-        # By default, uses First File
-        if len(scene_data['files'][0]) != 0 and scene_data['files'] is not None:
-            codec = scene_data['files'][0]['video_codec']
-            width = scene_data['files'][0]['width']
-            height = scene_data['files'][0]['height']
-            durationinseconds = scene_data['files'][0]['duration']
-            audio_codec = scene_data['files'][0]['audio_codec']
-            file_path = scene_data['files'][0]['path']
-        else:
-            codec, width, height, durationinseconds, audio_codec, file_path = '', '', '', '', '', ''
-
-        # Scene Poster
-        thumb_poster = scene_data['paths']['screenshot']
-
-        return (title, id, play_count,
-                date_created, date_released, rating,
-                details, studio, director, performer_name,
-                performer_image, scene_tags, codec,
-                width, height, durationinseconds,
-                audio_codec, thumb_poster, performer_gender,
-                year_released, file_path, stash_ids, performer_url, studio_image)
-    else:
-        return None
-
-
-# File Change Check
-def file_changes_check(nfo_file_data, xml_data):
-    if nfo_file_data == "":
-        return True
-    else:
-        if nfo_file_data.encode() == xml_data:
-            return False
-        else:
-            return True
-
-
-# Generates Nfo Data
-def generateNFO(data):
-    if data:
-        (title, id, play_count,
-         date_created, date_released, rating,
-         details, studio, director,
-         performer_name, performer_image, scene_tags,
-         codec, width, height, durationinseconds,
-         audio_codec, thumb_poster, performer_gender,
-         year_released, file_path, stash_ids, performer_url, studio_image) = data
-
-        root = etree.Element("movie")
-
-        title_element = etree.SubElement(root, "title")
-        title_element.text = title
-
-        originaltitle_element = etree.SubElement(root, "originaltitle")
-        originaltitle_element.text = title
-
-        sorttitle_element = etree.SubElement(root, "sorttitle")
-
-        epbookmark_element = etree.SubElement(root, "epbookmark")
-
-        id_element = etree.SubElement(root, "uniqueid")
-        id_element.text = id
-
-        for ids in stash_ids:
-            stash_id_element = etree.SubElement(root, "uniqueid", type="stashdb")
-            stash_id_element.text = str(ids)
-
-        mpaa_element = etree.SubElement(root, "mpaa")
-        mpaa_element.text = "XXX"
-
-        playcount_element = etree.SubElement(root, "playcount")
-        playcount_element.text = str(play_count)
-
-        dateadded_element = etree.SubElement(root, "dateadded")
-        dateadded_element.text = date_created
-
-        premiered_element = etree.SubElement(root, "premiered")
-        premiered_element.text = date_released
-
+    # Year
+    if scene['date'] is not None:
         year_element = etree.SubElement(root, "year")
-        year_element.text = str(year_released)
+        year_element.text = str(datetime.datetime.strptime(str(scene['date']),"%Y-%m-%d").year)
 
-        userrating_element = etree.SubElement(root, "userrating")
-        userrating_element.text = rating
+    # User Rating
+    userrating_element = etree.SubElement(root, "userrating")
+    userrating_element.text = str(scene['rating100'])
 
-        plot_element = etree.SubElement(root, "plot")
-        plot_element.text = details
+    # Plot
+    plot_element = etree.SubElement(root, "plot")
+    plot_element.text = scene['details']
 
-        outline_element = etree.SubElement(root, "outline")
-        outline_element.text = details
+    # Outline
+    outline_element = etree.SubElement(root, "outline")
+    outline_element.text = scene['details']
 
-        studio_element = etree.SubElement(root, "studio")
-        studio_element.text = studio
+    # Studio
+    studio = scene['studio']
+    studio_element = etree.SubElement(root, "studio")
+    studio_element.text = studio['name']
+    studio_id_element = etree.SubElement(studio_element, "id")
+    studio_id_element.text = str(studio['id'])
+    studio_url_element = etree.SubElement(studio_element, "url")
+    studio_url_element.text = studio['url']
 
-        director_element = etree.SubElement(root, "director")
-        director_element.text = director
+    # Studio Thumbnail
+    thumb_studio_element = etree.SubElement(root, "thumb", attrib={"aspect": "clearlogo"})
+    thumb_studio_element.text = studio['image_path']
 
-        thumb_poster_element = etree.SubElement(root, "thumb", attrib={"aspect": "poster"})
-        thumb_poster_element.text = thumb_poster
+    # Set
+    set_element = etree.SubElement(root, "set")
+    set_name_element = etree.SubElement(set_element, "name")
+    set_name_element.text = studio['name']
+    set_thumb_element = etree.SubElement(set_element, "thumb", attrib={"aspect": "poster"})
+    set_thumb_element.text = studio['image_path']
 
-        thumb_landscape_element = etree.SubElement(root, "thumb", attrib={"aspect": "landscape"})
-        thumb_landscape_element.text = thumb_poster
+    # Director
+    director_element = etree.SubElement(root, "director")
+    director_element.text = scene['director']
 
-        thumb_studio_element = etree.SubElement(root, "thumb", attrib={"aspect": "clearlogo"})
-        thumb_studio_element.text = studio_image
+    # Thumbnails
+    thumb_poster_element = etree.SubElement(root, "thumb", attrib={"aspect": "poster"})
+    thumb_poster_element.text = scene['paths']['screenshot']
 
-        fanart_element = etree.SubElement(root, "fanart")
-        fanart_element_thumb_element = etree.SubElement(fanart_element, "thumb")
-        fanart_element_thumb_element.text = thumb_poster
+    thumb_landscape_element = etree.SubElement(root, "thumb", attrib={"aspect": "landscape"})
+    thumb_landscape_element.text = scene['paths']['screenshot']
 
-        for i in range(len(performer_name)):
-            actor_element = etree.SubElement(root, "actor")
-            name_element = etree.SubElement(actor_element, "name")
-            name_element.text = performer_name[i]
-            gender_element = etree.SubElement(actor_element, "gender")
-            gender_element.text = performer_gender[i]
-            role_element = etree.SubElement(actor_element, "role")
-            order_element = etree.SubElement(actor_element, "order")
-            order_element.text = str(i)
-            image_element = etree.SubElement(actor_element, "thumb", attrib={"aspect": "poster"})
-            image_element.text = performer_image[i]
-            profile_element = etree.SubElement(actor_element, "profile")
-            profile_element.text = str(performer_url[i])
+    fanart_element = etree.SubElement(root, "fanart")
+    fanart_thumb_element = etree.SubElement(fanart_element, "thumb")
+    fanart_thumb_element.text = scene['paths']['screenshot']
 
-        genre_element = etree.SubElement(root, "genre")
+    # Actors
+    for actor in scene['performers']:
+        actor_element = etree.SubElement(root, "actor")
+        actor_name_element = etree.SubElement(actor_element, "name")
+        actor_name_element.text = actor['name']
+        gender_element = etree.SubElement(actor_element, "gender")
+        gender_element.text = actor['gender']
+        image_element = etree.SubElement(actor_element, "thumb", attrib={"aspect": "poster"})
+        image_element.text = actor['image_path']
+        profile_element = etree.SubElement(actor_element, "profile")
+        profile_element.text = actor['url']
 
-        for tags in scene_tags:
-            tag_element = etree.SubElement(root, "tag")
-            tag_element.text = tags
+    # Genre
+    for tag in scene['tags']:
+        tag_element = etree.SubElement(root, "tag")
+        tag_element.text = tag['name']
 
-        set_element = etree.SubElement(root, "set")
-        set_element_name = etree.SubElement(set_element, "name")
-        set_element_name.text = studio
-        set_element_overview = etree.SubElement(set_element, "overview")
-        set_element_thumb = etree.SubElement(set_element, "thumb", attrib={"aspect": "poster"})
-        set_element_thumb.text = studio_image
-
+    # File Information
+    for file_info in scene['files']:
         fileinfo_element = etree.SubElement(root, "fileinfo")
         streamdetails_element = etree.SubElement(fileinfo_element, "streamdetails")
+        
+        # Video
         video_element = etree.SubElement(streamdetails_element, "video")
-        codec_element = etree.SubElement(video_element, "codec")
-        codec_element.text = codec
+        video_codec_element = etree.SubElement(video_element, "codec")
+        video_codec_element.text = file_info['video_codec']
         aspect_element = etree.SubElement(video_element, "aspect")
-        aspect_element.text = str(round(width / height, 2))
+        aspect_element.text = str(round(file_info['width'] / file_info['height'], 2))
         width_element = etree.SubElement(video_element, "width")
-        width_element.text = str(width)
+        width_element.text = str(file_info['width'])
         height_element = etree.SubElement(video_element, "height")
-        height_element.text = str(height)
-        durationinseconds_element = etree.SubElement(video_element, "durationinseconds")
-        durationinseconds_element.text = str(durationinseconds)
-        stereomode_element = etree.SubElement(video_element, "stereomode")
+        height_element.text = str(file_info['height'])
+        duration_element = etree.SubElement(video_element, "durationinseconds")
+        duration_element.text = str(file_info['duration'])
 
+        # Audio
         audio_element = etree.SubElement(streamdetails_element, "audio")
         audio_codec_element = etree.SubElement(audio_element, "codec")
-        audio_codec_element.text = audio_codec
-        language_audio_element = etree.SubElement(audio_element, "language")
-        channels_audio_element = etree.SubElement(audio_element, "channels")
+        audio_codec_element.text = file_info['audio_codec']
 
-        source_element = etree.SubElement(root, "source")
-        source_element.text = "UNKNOWN"
+    return root
 
-        edition_element = etree.SubElement(root, "edition")
-        edition_element.text = "NONE"
-
-        file = os.path.basename(file_path)
-
-        filename = os.path.splitext(file)[0] if '.' in file else file
-
-        original_filename_element = etree.SubElement(root, "original_filename")
-        original_filename_element.text = file
-
-        user_note_element = etree.SubElement(root, "user_note")
-
-        base_dir = os.path.dirname(file_path)
-
-        xml_string = etree.tostring(root, pretty_print=True, xml_declaration=True, encoding="utf-8")
-
-        if os.path.exists(f"{base_dir}/{filename}.nfo"):
-            with open(f"{base_dir}/{filename}.nfo", "r") as f:
-                nfo_content = f.read()
-                if file_changes_check(nfo_content, xml_string) is True:
-                    with open(f"{base_dir}/{filename}.nfo", "wb") as f:
-                        f.write(xml_string)
-                        return f"Change Detected ! Updated nfo for {filename} [Id -> {id}] [File -> {base_dir}/{filename}.nfo]"
-                else:
-                    return f"No Change Detected for {filename} [Id -> {id}]"
-        else:
-            with open(f"{base_dir}/{filename}.nfo", "wb") as f:
-                f.write(xml_string)
-                return f"New File Detected ! Added nfo for {filename} [Id -> {id}] [File -> {base_dir}/{filename}.nfo]"
-    else:
-        return "Json Data is Empty"
-
-
-def main():
-    validate_config()
-    json = {
-        "operationName": "FindScenes",
-        "variables": {
-            "filter": {
-                "per_page": -1,
-            },
-            "scene_filter": {
-                "organized": config.organized
-            }
-        },
-        "query": "query FindScenes($filter: FindFilterType, $scene_filter: SceneFilterType, $scene_ids: [Int!]) {\n  "
-                 "findScenes(filter: $filter, scene_filter: $scene_filter, scene_ids: $scene_ids) {\n    count\n    "
-                 "filesize\n    duration\n    scenes {\n      ...SlimSceneData\n      __typename\n    }\n    "
-                 "__typename\n  }\n}\n\nfragment SlimSceneData on Scene {\n  id\n  title\n  code\n  details\n  "
-                 "director\n  urls\n  date\n  rating100\n  o_counter\n  organized\n  interactive\n  "
-                 "interactive_speed\n  resume_time\n  play_duration\n  play_count\n  files {\n    ...VideoFileData\n  "
-                 "  __typename\n  }\n  paths {\n    screenshot\n    preview\n    stream\n    webp\n    vtt\n    "
-                 "sprite\n    funscript\n    interactive_heatmap\n    caption\n    __typename\n  }\n  scene_markers {"
-                 "\n    id\n    title\n    seconds\n    primary_tag {\n      id\n      name\n      __typename\n    "
-                 "}\n    __typename\n  }\n  galleries {\n    id\n    files {\n      path\n      __typename\n    }\n   "
-                 " folder {\n      path\n      __typename\n    }\n    title\n    __typename\n  }\n  studio {\n    "
-                 "id\n    name\n    image_path\n    __typename\n  }\n  movies {\n    movie {\n      id\n      name\n  "
-                 "    front_image_path\n      __typename\n    }\n    scene_index\n    __typename\n  }\n  tags {\n    "
-                 "id\n    name\n    __typename\n  }\n  performers {\n    id\n    name\n    gender\n    favorite\n    "
-                 "image_path\n    __typename\n  }\n  stash_ids {\n    endpoint\n    stash_id\n    __typename\n  }\n  "
-                 "__typename\n}\n\nfragment VideoFileData on VideoFile {\n  id\n  path\n  size\n  mod_time\n  "
-                 "duration\n  video_codec\n  audio_codec\n  width\n  height\n  frame_rate\n  bit_rate\n  fingerprints "
-                 "{\n    type\n    value\n    __typename\n  }\n  __typename\n}"
+query = """
+{
+   allScenes {
+    id
+    title
+    details
+    director
+    date
+    rating100
+    organized
+    play_count
+    created_at
+    files {
+      path
+      video_codec
+      width
+      height
+      duration
+      audio_codec
     }
+    paths {
+      screenshot
+    }
+    studio {
+      name
+      id
+      url
+      image_path
+    }
+    tags {
+      name
+    }
+    performers {
+      name
+      gender
+      image_path
+      url
+    }
+    stash_ids {
+      stash_id
+    }
+  }
+}
+"""
 
-    json_response = make_graphql_request(json)
-    if json_response:
-        scene_data = json_response['data']['findScenes']
-        scene_ids = [scene['id'] for scene in scene_data['scenes']]
-        with concurrent.futures.ThreadPoolExecutor(max_workers=config.parallel_workers) as executor:
-            futures = [executor.submit(generateNFO, stashSceneInfo(scene_id)) for scene_id in scene_ids]
-            for future in concurrent.futures.as_completed(futures):
-                result = future.result()
-                if result is None:
-                    log.error("generateNFO returned None")
-                else:
-                    log.info(f'Log: {result}')
+START_TIME = time.time()
+
+r = make_graphql_request(query)
+
+if r is not None:
+    if config.generate_nfo_for_files in ['Organized', 'Unorganized', 'All']:
+        organizedScenes = [scene for scene in r.get('data', {}).get('allScenes', [])
+                           if (config.generate_nfo_for_files == 'Organized' and scene['organized']) or
+                           (config.generate_nfo_for_files == 'Unorganized' and not scene['organized']) or
+                           (config.generate_nfo_for_files == 'All')]
+        
+        
+        for scene in organizedScenes:
+            root = process_scene(scene)
+            file_path = scene['files'][0]['path'] 
+            file_name = os.path.basename(file_path)
+            file_name_without_ext = os.path.splitext(file_name)[0]
+            file_base_dir = os.path.dirname(file_path)
+            nfo_file_name = f'{file_name_without_ext}.nfo'
+            nfo_file_path = os.path.join(file_base_dir, nfo_file_name)
+            write_nfo(root, nfo_file_path)
+        log.debug("Execution time: {}s".format(round(time.time() - START_TIME, 5)))
     else:
-        log.error("Json Response is Null")
-
-
-if __name__ == "__main__":
-    main()
+        log.error("Please Check config -> make_graphql_request")
+else:
+    log.error("No response from GraphQL server")
