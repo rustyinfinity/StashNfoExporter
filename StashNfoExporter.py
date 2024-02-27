@@ -57,7 +57,7 @@ def process_scene(scene):
 
     # Plot
     plot_element = etree.SubElement(root, "plot")
-    plot_element.text = scene['details']
+    plot_element.text = str(scene['details'])
 
     # Studio Thumbnail (Logo)
     thumb_studio_element = etree.SubElement(root, "thumb", attrib={"aspect": "clearlogo"})
