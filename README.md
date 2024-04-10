@@ -4,20 +4,28 @@
 </p>
 
 # Usage
-Clone the repo to plugins folder of stash.
+* Clone the repo or download zip and extract it to plugins folder of stash.
 
-Make sure lxml and requests modules are installed.
+* Make sure lxml and requests modules of python are installed.
 
-
-```
-pip install lxml requests
-```
+How to install ->
+ ```
+ pip install lxml requests
+ ```
 
 or 
 
 ```
 pip install -r requirements.txt
 ```
+
+
+* Check the config.py file in StashNfoExporter folder and update it accordingly.
+ 
+* Lastly go to Stash > Settings > Tasks > Plugin Tasks > StashNfoExporter > Creates NFO
+
+* Check Stash > Settings > Logs for any error 
+
 
 ## For people using Dockers
 They can refer to this post https://github.com/rustyinfinity/StashNfoExporter/issues/1#issuecomment-1902639819
