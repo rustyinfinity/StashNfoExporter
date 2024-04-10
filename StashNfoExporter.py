@@ -26,25 +26,21 @@ json_input = json.loads(sys.stdin.read())
 def make_graphql_request(query):
     try:
         json_query = {"query": query}
-        response = requests.post(
-            config.graphql_url, json=json_query, headers=HEADERS)
+        response = requests.post(config.graphql_url, json=json_query, headers=HEADERS)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
         log.error(f"Error making GraphQL request: {e}")
         return None
 
-
 def write_nfo(root, file_path):
-    xml_string = etree.tostring(
-        root, pretty_print=True, xml_declaration=True, encoding="utf-8")
+    xml_string = etree.tostring(root, pretty_print=True, xml_declaration=True,encoding="utf-8")
     file = open(file_path, 'wb')
     try:
         file.write(xml_string)
     finally:
         file.close()
         log.info(f"Added {file_path}")
-
 
 def process_scene(scene):
     root = etree.Element("movie")
@@ -90,48 +86,44 @@ def process_scene(scene):
     # Year
     if scene['date'] is not None:
         year_element = etree.SubElement(root, "year")
-        year_element.text = str(datetime.datetime.strptime(
-            str(scene['date']), "%Y-%m-%d").year)
+        year_element.text = str(datetime.datetime.strptime(str(scene['date']),"%Y-%m-%d").year)
 
     # User Rating
-    # userrating_element = etree.SubElement(root, "userrating")
-    # userrating_element.text = str(scene['rating100'])
+    #userrating_element = etree.SubElement(root, "userrating")
+    #userrating_element.text = str(scene['rating100'])
 
     # Plot
     plot_element = etree.SubElement(root, "plot")
     plot_element.text = str(scene['details'])
-
+    
     # Outline
     outline_element = etree.SubElement(root, "outline")
-    outline_element.text = str(scene['details'])
+    outline_element.text = str(scene['details']) 
 
     # Studio
     studio_element = etree.SubElement(root, "studio")
     if scene['studio'] is None:
-        studio_element.text = ""
+         studio_element.text = ""
     else:
-        studio_element.text = scene['studio']['name']
+         studio_element.text = scene['studio']['name']
 
     # Director
     director_element = etree.SubElement(root, "director")
     director_element.text = scene['director']
 
     # Studio Thumbnail (Logo)
-    thumb_studio_element = etree.SubElement(
-        root, "thumb", attrib={"aspect": "clearlogo"})
+    thumb_studio_element = etree.SubElement(root, "thumb", attrib={"aspect": "clearlogo"})
     if scene['studio'] is None:
         thumb_studio_element.text = ""
     else:
-        thumb_studio_element.text = scene['studio']['image_path']
+        thumb_studio_element.text =  scene['studio']['image_path']
 
     # Landscape Thumbnail
-    thumb_landscape_element = etree.SubElement(
-        root, "thumb", attrib={"aspect": "landscape"})
+    thumb_landscape_element = etree.SubElement(root, "thumb", attrib={"aspect": "landscape"})
     thumb_landscape_element.text = scene['paths']['screenshot']
 
     # Vertical Thumbnail
-    thumb_poster_element = etree.SubElement(
-        root, "thumb", attrib={"aspect": "poster"})
+    thumb_poster_element = etree.SubElement(root, "thumb", attrib={"aspect": "poster"})
     thumb_poster_element.text = scene['paths']['screenshot']
 
     # Fanart Thumbnail
@@ -144,8 +136,9 @@ def process_scene(scene):
         actor_element = etree.SubElement(root, "actor")
         actor_name_element = etree.SubElement(actor_element, "name")
         actor_name_element.text = actor['name']
-        image_element = etree.SubElement(actor_element, "thumb")
+        image_element = etree.SubElement(actor_element, "thumb") 
         image_element.text = actor['image_path']
+  
 
     # Tag
     for tag in scene['tags']:
@@ -160,19 +153,19 @@ def process_scene(scene):
     else:
         set_name_element.text = scene['studio']['name']
 
+ 
+
     # File Information
     for file_info in scene['files']:
         fileinfo_element = etree.SubElement(root, "fileinfo")
-        streamdetails_element = etree.SubElement(
-            fileinfo_element, "streamdetails")
+        streamdetails_element = etree.SubElement(fileinfo_element, "streamdetails")
 
         # Video
         video_element = etree.SubElement(streamdetails_element, "video")
         video_codec_element = etree.SubElement(video_element, "codec")
         video_codec_element.text = file_info['video_codec']
         aspect_element = etree.SubElement(video_element, "aspect")
-        aspect_element.text = str(
-            round(file_info['width'] / file_info['height'], 2))
+        aspect_element.text = str(round(file_info['width'] / file_info['height'], 2))
         width_element = etree.SubElement(video_element, "width")
         width_element.text = str(file_info['width'])
         height_element = etree.SubElement(video_element, "height")
@@ -185,8 +178,8 @@ def process_scene(scene):
         audio_codec_element = etree.SubElement(audio_element, "codec")
         audio_codec_element.text = file_info['audio_codec']
 
-    return root
 
+    return root
 
 query = """
 {
@@ -234,7 +227,7 @@ query = """
 }
 """
 
-if json_input:
+if "mode" in json_input["args"]:
     if json_input['args']['mode'] == 'processNFO':
         log.info("Starting Process Info")
         START_TIME = time.time()
@@ -255,9 +248,9 @@ if json_input:
         if r is not None:
             if config.generate_nfo_for_files in ['Organized', 'Unorganized', 'All']:
                 organizedScenes = [scene for scene in r.get('data', {}).get('allScenes', [])
-                                   if (config.generate_nfo_for_files == 'Organized' and scene['organized']) or
-                                   (config.generate_nfo_for_files == 'Unorganized' and not scene['organized']) or
-                                   (config.generate_nfo_for_files == 'All')]
+                                if (config.generate_nfo_for_files == 'Organized' and scene['organized']) or
+                                (config.generate_nfo_for_files == 'Unorganized' and not scene['organized']) or
+                                (config.generate_nfo_for_files == 'All')]
 
                 for scene in organizedScenes:
                     file_path = scene['files'][0]['path']
@@ -270,8 +263,7 @@ if json_input:
                     if int(scene['id']) in last_updated_dict and scene['updated_at'] == last_updated_dict[int(scene['id'])] and os.path.exists(nfo_file_path):
                         continue
                     else:
-                        print("Changes Detected Adding to Database" +
-                              scene['title'])
+                        print("Changes Detected Adding to Database" +scene['title'] )
                         cursor.execute('''INSERT OR REPLACE INTO scenes (id, title, last_updated_at)
                                         VALUES (?, ?, ?)''', (scene['id'], scene['title'], scene['updated_at']))
                         conn.commit()
@@ -287,7 +279,7 @@ if json_input:
                     if int(scene['id']) in last_updated_dict and scene['updated_at'] == last_updated_dict[int(scene['id'])] and os.path.exists(nfo_file_path):
                         continue
                     else:
-                        print("Changes Detected", scene['title'])
+                        print("Changes Detected" ,scene['title'] )
                         root = process_scene(scene)
                         file_path = scene['files'][0]['path']
                         file_name = os.path.basename(file_path)
@@ -296,16 +288,14 @@ if json_input:
                         nfo_file_name = f'{file_name_without_ext}.nfo'
                         # For testing only save path is my local  nfo_test folder !
                         # For Custom Path you can change base dir
-                        nfo_file_path = os.path.join(
-                            file_base_dir, nfo_file_name)
+                        nfo_file_path = os.path.join(file_base_dir, nfo_file_name)
                         write_nfo(root, nfo_file_path)
-                log.debug("Execution time: {}s".format(
-                    round(time.time() - START_TIME, 5)))
+                log.debug("Execution time: {}s".format(round(time.time() - START_TIME, 5)))
             else:
                 log.error("Please Check config -> make_graphql_request")
         else:
             log.error("No response from GraphQL server")
-
+    
     if json_input['args']['mode'] == 'cleanupNFO':
         log.info("Starting Cleanup Process")
         START_TIME = time.time()
@@ -329,9 +319,9 @@ if json_input:
             if r is not None:
                 if config.generate_nfo_for_files in ['Organized', 'Unorganized', 'All']:
                     organizedScenes = [scene for scene in r.get('data', {}).get('allScenes', [])
-                                       if (config.generate_nfo_for_files == 'Organized' and scene['organized']) or
-                                       (config.generate_nfo_for_files == 'Unorganized' and not scene['organized']) or
-                                       (config.generate_nfo_for_files == 'All')]
+                                    if (config.generate_nfo_for_files == 'Organized' and scene['organized']) or
+                                    (config.generate_nfo_for_files == 'Unorganized' and not scene['organized']) or
+                                    (config.generate_nfo_for_files == 'All')]
 
                     for scene in organizedScenes:
                         file_path = scene['files'][0]['path']
@@ -340,18 +330,15 @@ if json_input:
                         file_base_dir = os.path.dirname(file_path)
                         nfo_file_name = f'{file_name_without_ext}.nfo'
                         # For testing only save path is my local  nfo_test folder !
-                        nfo_file_path = os.path.join(
-                            file_base_dir, nfo_file_name)
+                        nfo_file_path = os.path.join(file_base_dir, nfo_file_name)
                         if int(scene['id']) in last_updated_dict and scene['updated_at'] == last_updated_dict[int(scene['id'])] and os.path.exists(nfo_file_path):
                             continue
                         else:
-                            print(
-                                "Changes Detected Adding to Database" + scene['title'])
+                            print("Changes Detected Adding to Database" +scene['title'] )
                             cursor.execute('''INSERT OR REPLACE INTO scenes (id, title, last_updated_at)
                                             VALUES (?, ?, ?)''', (scene['id'], scene['title'], scene['updated_at']))
                             conn.commit()
-                            last_updated_dict[scene['id']
-                                              ] = scene['updated_at']
+                            last_updated_dict[scene['id']] = scene['updated_at']
                     for scene in organizedScenes:
                         file_path = scene['files'][0]['path']
                         file_name = os.path.basename(file_path)
@@ -359,29 +346,25 @@ if json_input:
                         file_base_dir = os.path.dirname(file_path)
                         nfo_file_name = f'{file_name_without_ext}.nfo'
                         # For testing only save path is my local  nfo_test folder !
-                        nfo_file_path = os.path.join(
-                            file_base_dir, nfo_file_name)
+                        nfo_file_path = os.path.join(file_base_dir, nfo_file_name)
                         if int(scene['id']) in last_updated_dict and scene['updated_at'] == last_updated_dict[int(scene['id'])] and os.path.exists(nfo_file_path):
                             continue
                         else:
-                            print("Changes Detected", scene['title'])
+                            print("Changes Detected" ,scene['title'] )
                             root = process_scene(scene)
                             file_path = scene['files'][0]['path']
                             file_name = os.path.basename(file_path)
-                            file_name_without_ext = os.path.splitext(file_name)[
-                                0]
+                            file_name_without_ext = os.path.splitext(file_name)[0]
                             file_base_dir = os.path.dirname(file_path)
                             nfo_file_name = f'{file_name_without_ext}.nfo'
                             # For testing only save path is my local  nfo_test folder !
                             # For Custom Path you can change base dir
-                            nfo_file_path = os.path.join(
-                                file_base_dir, nfo_file_name)
+                            nfo_file_path = os.path.join(file_base_dir, nfo_file_name)
                             write_nfo(root, nfo_file_path)
-                    log.debug("Execution time: {}s".format(
-                        round(time.time() - START_TIME, 5)))
+                    log.debug("Execution time: {}s".format(round(time.time() - START_TIME, 5)))
                 else:
                     log.error("Please Check config -> make_graphql_request")
             else:
-                log.error("No response from GraphQL server")
+                log.error("No response from GraphQL server") 
         else:
             log.error("Create NFO First before cleanup")
